@@ -26,6 +26,10 @@ inputs:
     description: 'Allow windows runners to save caches that can be restored on other platforms (GitHub Actions feature)'
     default: 'false'
     required: false
+  enable-platform-suffix:
+    description: 'Enable automatic platform suffix for tags (default: true)'
+    default: 'true'
+    required: false
   # CLI flags (passed directly to boringcache CLI)
   no-platform:
     description: 'Disable automatic platform suffix for tags (CLI --no-platform flag)'
