@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setupBoringCache = setupBoringCache;
+exports.ensureBoringCache = void 0;
 exports.getCacheConfig = getCacheConfig;
 exports.validateInputs = validateInputs;
 exports.resolvePaths = resolvePaths;
@@ -43,89 +43,10 @@ exports.getPlatformSuffix = getPlatformSuffix;
 exports.getWorkspace = getWorkspace;
 exports.convertCacheFormatToEntries = convertCacheFormatToEntries;
 const core = __importStar(require("@actions/core"));
-const exec = __importStar(require("@actions/exec"));
 const os = __importStar(require("os"));
 const path = __importStar(require("path"));
-async function setupBoringCache() {
-    try {
-        const result = await exec.exec('boringcache', ['--version'], {
-            ignoreReturnCode: true,
-            silent: true
-        });
-        if (result === 0) {
-            core.debug('BoringCache CLI already available');
-        }
-        else {
-            await downloadAndInstallCLI();
-        }
-    }
-    catch (error) {
-        await downloadAndInstallCLI();
-    }
-    const token = process.env.BORINGCACHE_API_TOKEN;
-    if (token) {
-        try {
-            await exec.exec('boringcache', ['auth', '--token', token], { silent: true });
-            core.debug('✅ BoringCache authenticated');
-        }
-        catch (error) {
-            core.warning(`Authentication failed: ${error}`);
-        }
-    }
-}
-async function downloadAndInstallCLI() {
-    core.info('📥 Installing BoringCache CLI using official installer...');
-    try {
-        if (os.platform() === 'win32') {
-            await exec.exec('powershell', ['-Command', 'irm https://install.boringcache.com/install.ps1 | iex'], {
-                listeners: {
-                    stdout: (data) => {
-                        core.info(data.toString());
-                    },
-                    stderr: (data) => {
-                        core.info(data.toString());
-                    }
-                }
-            });
-            core.addPath('C:\\Users\\runneradmin\\.boringcache\\bin');
-            core.exportVariable('PATH', `C:\\Users\\runneradmin\\.boringcache\\bin;${process.env.PATH}`);
-        }
-        else {
-            await exec.exec('bash', ['-c', 'curl -sSL https://install.boringcache.com/install.sh | sh'], {
-                listeners: {
-                    stdout: (data) => {
-                        core.info(data.toString());
-                    },
-                    stderr: (data) => {
-                        core.info(data.toString());
-                    }
-                }
-            });
-            const homeDir = os.homedir();
-            // Add common BoringCache installation paths for Linux/macOS
-            core.addPath(`${homeDir}/.boringcache/bin`);
-            core.addPath(`${homeDir}/.local/bin`);
-            core.addPath('/usr/local/bin');
-            core.addPath('/home/runner/.boringcache/bin');
-            core.addPath('/home/runner/.local/bin');
-            // Also set PATH environment variable directly
-            const currentPath = process.env.PATH || '';
-            const newPaths = [
-                `${homeDir}/.boringcache/bin`,
-                `${homeDir}/.local/bin`,
-                '/usr/local/bin',
-                '/home/runner/.boringcache/bin',
-                '/home/runner/.local/bin'
-            ];
-            const updatedPath = newPaths.join(':') + ':' + currentPath;
-            core.exportVariable('PATH', updatedPath);
-        }
-        core.info('✅ BoringCache CLI installed successfully');
-    }
-    catch (error) {
-        throw new Error(`Failed to install BoringCache CLI: ${error}`);
-    }
-}
+const action_core_1 = require("@boringcache/action-core");
+Object.defineProperty(exports, "ensureBoringCache", { enumerable: true, get: function () { return action_core_1.ensureBoringCache; } });
 async function getCacheConfig(key, enableCrossOsArchive, enablePlatformSuffix = false) {
     var _a;
     const workspace = process.env.BORINGCACHE_WORKSPACE ||

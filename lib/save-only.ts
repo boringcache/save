@@ -1,10 +1,11 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import * as fs from 'fs';
-import { setupBoringCache, validateInputs, parseEntries, getWorkspace, convertCacheFormatToEntries } from './utils';
+import { ensureBoringCache, validateInputs, parseEntries, getWorkspace, convertCacheFormatToEntries } from './utils';
 
 export async function run(): Promise<void> {
   try {
+    const cliVersion = core.getInput('cli-version') || 'v1.0.0';
     const inputs = {
       workspace: core.getInput('workspace'),
       entries: core.getInput('entries'),
@@ -16,7 +17,7 @@ export async function run(): Promise<void> {
     };
 
     validateInputs(inputs);
-    await setupBoringCache();
+    await ensureBoringCache({ version: cliVersion });
 
     const workspace = getWorkspace(inputs);
     

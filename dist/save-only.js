@@ -40,6 +40,7 @@ const fs = __importStar(require("fs"));
 const utils_1 = require("./utils");
 async function run() {
     try {
+        const cliVersion = core.getInput('cli-version') || 'v1.0.0';
         const inputs = {
             workspace: core.getInput('workspace'),
             entries: core.getInput('entries'),
@@ -50,7 +51,7 @@ async function run() {
             saveAlways: core.getBooleanInput('save-always'),
         };
         (0, utils_1.validateInputs)(inputs);
-        await (0, utils_1.setupBoringCache)();
+        await (0, utils_1.ensureBoringCache)({ version: cliVersion });
         const workspace = (0, utils_1.getWorkspace)(inputs);
         let entriesString;
         if (inputs.entries) {

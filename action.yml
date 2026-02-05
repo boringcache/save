@@ -2,6 +2,10 @@ name: 'BoringCache Save'
 description: 'Cache once. Reuse everywhere. Save cache artifacts to BoringCache (pair with boringcache/restore).'
 author: 'BoringCache'
 inputs:
+  cli-version:
+    description: 'BoringCache CLI version to use'
+    required: false
+    default: 'v1.0.0'
   workspace:
     description: 'Workspace identifier in format namespace/workspace (e.g., my-org/my-project). If not provided, uses repository name.'
     required: false
@@ -35,6 +39,9 @@ inputs:
     description: 'Enable detailed output (CLI --verbose flag)'
     default: 'false'
     required: false
+outputs:
+  cache-saved:
+    description: 'Whether the cache was saved successfully'
 runs:
   using: 'node20'
   main: 'dist/save-only/index.js'

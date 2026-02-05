@@ -3,94 +3,14 @@ import * as exec from '@actions/exec';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
+import { ensureBoringCache, execBoringCache as execBoringCacheCore } from '@boringcache/action-core';
+
+export { ensureBoringCache };
 
 export interface CacheConfig {
   workspace: string;
   fullKey: string;
   platformSuffix: string;
-}
-
-export async function setupBoringCache(): Promise<void> {
-
-  try {
-    const result = await exec.exec('boringcache', ['--version'], { 
-      ignoreReturnCode: true, 
-      silent: true 
-    });
-    if (result === 0) {
-      core.debug('BoringCache CLI already available');
-    } else {
-      await downloadAndInstallCLI();
-    }
-  } catch (error) {
-    await downloadAndInstallCLI();
-  }
-  const token = process.env.BORINGCACHE_API_TOKEN;
-  if (token) {
-    try {
-      await exec.exec('boringcache', ['auth', '--token', token], { silent: true });
-      core.debug('✅ BoringCache authenticated');
-    } catch (error) {
-      core.warning(`Authentication failed: ${error}`);
-    }
-  }
-}
-
-async function downloadAndInstallCLI(): Promise<void> {
-  core.info('📥 Installing BoringCache CLI using official installer...');
-  
-  try {
-    if (os.platform() === 'win32') {
-      await exec.exec('powershell', ['-Command', 'irm https://install.boringcache.com/install.ps1 | iex'], {
-        listeners: {
-          stdout: (data: Buffer) => {
-            core.info(data.toString());
-          },
-          stderr: (data: Buffer) => {
-            core.info(data.toString());
-          }
-        }
-      });
-      
-      core.addPath('C:\\Users\\runneradmin\\.boringcache\\bin');
-      core.exportVariable('PATH', `C:\\Users\\runneradmin\\.boringcache\\bin;${process.env.PATH}`);
-    } else {
-      await exec.exec('bash', ['-c', 'curl -sSL https://install.boringcache.com/install.sh | sh'], {
-        listeners: {
-          stdout: (data: Buffer) => {
-            core.info(data.toString());
-          },
-          stderr: (data: Buffer) => {
-            core.info(data.toString());
-          }
-        }
-      });
-      
-      const homeDir = os.homedir();
-      // Add common BoringCache installation paths for Linux/macOS
-      core.addPath(`${homeDir}/.boringcache/bin`);
-      core.addPath(`${homeDir}/.local/bin`);
-      core.addPath('/usr/local/bin');
-      core.addPath('/home/runner/.boringcache/bin');
-      core.addPath('/home/runner/.local/bin');
-      
-      // Also set PATH environment variable directly
-      const currentPath = process.env.PATH || '';
-      const newPaths = [
-        `${homeDir}/.boringcache/bin`,
-        `${homeDir}/.local/bin`,
-        '/usr/local/bin',
-        '/home/runner/.boringcache/bin',
-        '/home/runner/.local/bin'
-      ];
-      const updatedPath = newPaths.join(':') + ':' + currentPath;
-      core.exportVariable('PATH', updatedPath);
-    }
-    
-    core.info('✅ BoringCache CLI installed successfully');
-  } catch (error) {
-    throw new Error(`Failed to install BoringCache CLI: ${error}`);
-  }
 }
 
 export async function getCacheConfig(
