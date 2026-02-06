@@ -45304,7 +45304,6 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = run;
 const core = __importStar(__nccwpck_require__(37484));
-const fs = __importStar(__nccwpck_require__(79896));
 const utils_1 = __nccwpck_require__(2219);
 async function run() {
     try {
@@ -45331,64 +45330,23 @@ async function run() {
         else {
             entriesString = (0, utils_1.convertCacheFormatToEntries)(inputs, 'save');
         }
-        const shouldDisablePlatform = inputs.enableCrossOsArchive || inputs.noPlatform;
-        await saveCache(workspace, entriesString, {
-            force: inputs.force || inputs.saveAlways,
-            noPlatform: shouldDisablePlatform,
-            verbose: inputs.verbose,
-            exclude: inputs.exclude,
-        });
+        const args = ['save', workspace, entriesString];
+        if (inputs.force || inputs.saveAlways) {
+            args.push('--force');
+        }
+        if (inputs.enableCrossOsArchive || inputs.noPlatform) {
+            args.push('--no-platform');
+        }
+        if (inputs.verbose) {
+            args.push('--verbose');
+        }
+        if (inputs.exclude) {
+            args.push('--exclude', inputs.exclude);
+        }
+        await (0, utils_1.execBoringCache)(args);
     }
     catch (error) {
         core.setFailed(`Cache save failed: ${error instanceof Error ? error.message : String(error)}`);
-    }
-}
-async function saveCache(workspace, entries, options = {}) {
-    const entryList = (0, utils_1.parseEntries)(entries, 'save');
-    const validEntries = [];
-    const missingPaths = [];
-    for (const entry of entryList) {
-        try {
-            await fs.promises.access(entry.savePath);
-            core.debug(`Path exists: ${entry.savePath}`);
-            validEntries.push(entry);
-        }
-        catch {
-            missingPaths.push(entry.savePath);
-            core.debug(`Path not found: ${entry.savePath}`);
-        }
-    }
-    if (missingPaths.length > 0) {
-        core.warning(`Some cache paths do not exist: ${missingPaths.join(', ')}`);
-    }
-    if (validEntries.length === 0) {
-        core.warning('No valid cache paths found, skipping save');
-        return;
-    }
-    core.info(`Saving ${validEntries.length} cache entries to ${workspace}`);
-    for (const entry of validEntries) {
-        core.info(`Saving: ${entry.savePath} -> ${entry.tag}`);
-        const args = ['save', workspace, `${entry.tag}:${entry.savePath}`];
-        if (options.force) {
-            args.push('--force');
-        }
-        if (options.noPlatform) {
-            args.push('--no-platform');
-        }
-        if (options.verbose) {
-            args.push('--verbose');
-        }
-        if (options.exclude) {
-            args.push('--exclude', options.exclude);
-        }
-        const result = await (0, utils_1.execBoringCache)(args, { ignoreReturnCode: true });
-        if (result === 0) {
-            core.info(`Saved: ${entry.tag}`);
-            core.setOutput('cache-saved', 'true');
-        }
-        else {
-            core.warning(`Failed to save: ${entry.tag}`);
-        }
     }
 }
 run();

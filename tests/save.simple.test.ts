@@ -25,14 +25,10 @@ describe('Save Action', () => {
 
       expect(ensureBoringCache).toHaveBeenCalledWith({ version: 'v1.0.0' });
 
-      expect(execBoringCache).toHaveBeenCalledTimes(2);
+      // Now passes all entries as single string to CLI
+      expect(execBoringCache).toHaveBeenCalledTimes(1);
       expect(execBoringCache).toHaveBeenCalledWith(
-        expect.arrayContaining(['save', 'my-org/my-project', expect.stringMatching(/^deps:.*node_modules$/)]),
-        expect.any(Object)
-      );
-      expect(execBoringCache).toHaveBeenCalledWith(
-        expect.arrayContaining(['save', 'my-org/my-project', expect.stringMatching(/^build:.*dist$/)]),
-        expect.any(Object)
+        ['save', 'my-org/my-project', 'deps:node_modules,build:dist'],
       );
     });
 
@@ -48,8 +44,7 @@ describe('Save Action', () => {
 
       expect(execBoringCache).toHaveBeenCalledTimes(1);
       expect(execBoringCache).toHaveBeenCalledWith(
-        expect.arrayContaining(['save', 'owner/repo']),
-        expect.any(Object)
+        ['save', 'owner/repo', 'deps:node_modules'],
       );
     });
   });
@@ -69,7 +64,6 @@ describe('Save Action', () => {
       expect(execBoringCache).toHaveBeenCalledTimes(1);
       expect(execBoringCache).toHaveBeenCalledWith(
         expect.arrayContaining(['save', 'owner/repo', expect.stringMatching(/^deps-hash123.*:.*\.npm$/)]),
-        expect.any(Object)
       );
     });
   });
@@ -88,8 +82,7 @@ describe('Save Action', () => {
 
       expect(execBoringCache).toHaveBeenCalledTimes(1);
       expect(execBoringCache).toHaveBeenCalledWith(
-        expect.arrayContaining(['save', 'my-org/my-project', expect.stringMatching(/^deps:/), '--force']),
-        expect.any(Object)
+        ['save', 'my-org/my-project', 'deps:node_modules', '--force'],
       );
     });
   });
@@ -113,11 +106,13 @@ describe('Save Action', () => {
       });
       mockGetBooleanInput({});
 
-      (execBoringCache as jest.Mock).mockResolvedValue(1);
+      (execBoringCache as jest.Mock).mockRejectedValue(new Error('save failed'));
 
       await run();
 
-      expect(core.setFailed).not.toHaveBeenCalled();
+      expect(core.setFailed).toHaveBeenCalledWith(
+        expect.stringContaining('save failed')
+      );
     });
   });
 });

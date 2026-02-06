@@ -1,6 +1,5 @@
 import * as core from '@actions/core';
-import * as fs from 'fs';
-import { ensureBoringCache, execBoringCache, validateInputs, parseEntries, getWorkspace, convertCacheFormatToEntries } from './utils';
+import { ensureBoringCache, execBoringCache, validateInputs, getWorkspace, convertCacheFormatToEntries } from './utils';
 
 export async function run(): Promise<void> {
   try {
@@ -30,79 +29,24 @@ export async function run(): Promise<void> {
       entriesString = convertCacheFormatToEntries(inputs, 'save');
     }
 
-    const shouldDisablePlatform = inputs.enableCrossOsArchive || inputs.noPlatform;
+    const args = ['save', workspace, entriesString];
+    if (inputs.force || inputs.saveAlways) {
+      args.push('--force');
+    }
+    if (inputs.enableCrossOsArchive || inputs.noPlatform) {
+      args.push('--no-platform');
+    }
+    if (inputs.verbose) {
+      args.push('--verbose');
+    }
+    if (inputs.exclude) {
+      args.push('--exclude', inputs.exclude);
+    }
 
-    await saveCache(workspace, entriesString, {
-      force: inputs.force || inputs.saveAlways,
-      noPlatform: shouldDisablePlatform,
-      verbose: inputs.verbose,
-      exclude: inputs.exclude,
-    });
+    await execBoringCache(args);
 
   } catch (error) {
     core.setFailed(`Cache save failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
-interface SaveOptions {
-  force?: boolean;
-  noPlatform?: boolean;
-  verbose?: boolean;
-  exclude?: string;
-}
-
-async function saveCache(workspace: string, entries: string, options: SaveOptions = {}): Promise<void> {
-  const entryList = parseEntries(entries, 'save');
-  const validEntries: typeof entryList = [];
-  const missingPaths: string[] = [];
-
-  for (const entry of entryList) {
-    try {
-      await fs.promises.access(entry.savePath);
-      core.debug(`Path exists: ${entry.savePath}`);
-      validEntries.push(entry);
-    } catch {
-      missingPaths.push(entry.savePath);
-      core.debug(`Path not found: ${entry.savePath}`);
-    }
-  }
-
-  if (missingPaths.length > 0) {
-    core.warning(`Some cache paths do not exist: ${missingPaths.join(', ')}`);
-  }
-
-  if (validEntries.length === 0) {
-    core.warning('No valid cache paths found, skipping save');
-    return;
-  }
-
-  core.info(`Saving ${validEntries.length} cache entries to ${workspace}`);
-
-  for (const entry of validEntries) {
-    core.info(`Saving: ${entry.savePath} -> ${entry.tag}`);
-    const args = ['save', workspace, `${entry.tag}:${entry.savePath}`];
-
-    if (options.force) {
-      args.push('--force');
-    }
-    if (options.noPlatform) {
-      args.push('--no-platform');
-    }
-    if (options.verbose) {
-      args.push('--verbose');
-    }
-    if (options.exclude) {
-      args.push('--exclude', options.exclude);
-    }
-
-    const result = await execBoringCache(args, { ignoreReturnCode: true });
-
-    if (result === 0) {
-      core.info(`Saved: ${entry.tag}`);
-      core.setOutput('cache-saved', 'true');
-    } else {
-      core.warning(`Failed to save: ${entry.tag}`);
-    }
   }
 }
 
