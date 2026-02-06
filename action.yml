@@ -43,6 +43,9 @@ inputs:
     description: 'Enable detailed output (CLI --verbose flag)'
     default: 'false'
     required: false
+  exclude:
+    description: 'Glob patterns to exclude from cache (comma-separated, e.g., "*.out,*.log")'
+    required: false
   save-always:
     description: 'Save cache even if the job fails'
     default: 'false'
@@ -51,7 +54,7 @@ outputs:
   cache-saved:
     description: 'Whether the cache was saved successfully'
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/save-only/index.js'
 branding:
   icon: 'upload'

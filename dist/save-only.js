@@ -50,6 +50,7 @@ async function run() {
             noPlatform: core.getBooleanInput('no-platform'),
             force: core.getBooleanInput('force'),
             verbose: core.getBooleanInput('verbose'),
+            exclude: core.getInput('exclude'),
             saveAlways: core.getBooleanInput('save-always'),
         };
         (0, utils_1.validateInputs)(inputs);
@@ -68,6 +69,7 @@ async function run() {
             force: inputs.force || inputs.saveAlways,
             noPlatform: shouldDisablePlatform,
             verbose: inputs.verbose,
+            exclude: inputs.exclude,
         });
     }
     catch (error) {
@@ -108,6 +110,9 @@ async function saveCache(workspace, entries, options = {}) {
         }
         if (options.verbose) {
             args.push('--verbose');
+        }
+        if (options.exclude) {
+            args.push('--exclude', options.exclude);
         }
         const result = await (0, utils_1.execBoringCache)(args, { ignoreReturnCode: true });
         if (result === 0) {

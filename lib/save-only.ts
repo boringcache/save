@@ -15,6 +15,7 @@ export async function run(): Promise<void> {
       noPlatform: core.getBooleanInput('no-platform'),
       force: core.getBooleanInput('force'),
       verbose: core.getBooleanInput('verbose'),
+      exclude: core.getInput('exclude'),
       saveAlways: core.getBooleanInput('save-always'),
     };
 
@@ -37,6 +38,7 @@ export async function run(): Promise<void> {
       force: inputs.force || inputs.saveAlways,
       noPlatform: shouldDisablePlatform,
       verbose: inputs.verbose,
+      exclude: inputs.exclude,
     });
 
   } catch (error) {
@@ -48,6 +50,7 @@ interface SaveOptions {
   force?: boolean;
   noPlatform?: boolean;
   verbose?: boolean;
+  exclude?: string;
 }
 
 async function saveCache(workspace: string, entries: string, options: SaveOptions = {}): Promise<void> {
@@ -89,6 +92,9 @@ async function saveCache(workspace: string, entries: string, options: SaveOption
     }
     if (options.verbose) {
       args.push('--verbose');
+    }
+    if (options.exclude) {
+      args.push('--exclude', options.exclude);
     }
 
     const result = await execBoringCache(args, { ignoreReturnCode: true });
