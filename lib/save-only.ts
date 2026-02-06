@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import * as fs from 'fs';
-import { ensureBoringCache, execBoringCache, validateInputs, parseEntries, getWorkspace, convertCacheFormatToEntries, getPlatformSuffix } from './utils';
+import { ensureBoringCache, execBoringCache, validateInputs, parseEntries, getWorkspace, convertCacheFormatToEntries } from './utils';
 
 export async function run(): Promise<void> {
   try {
@@ -11,7 +11,6 @@ export async function run(): Promise<void> {
       path: core.getInput('path'),
       key: core.getInput('key'),
       enableCrossOsArchive: core.getBooleanInput('enableCrossOsArchive'),
-      enablePlatformSuffix: core.getBooleanInput('enable-platform-suffix'),
       noPlatform: core.getBooleanInput('no-platform'),
       force: core.getBooleanInput('force'),
       verbose: core.getBooleanInput('verbose'),
@@ -31,8 +30,7 @@ export async function run(): Promise<void> {
       entriesString = convertCacheFormatToEntries(inputs, 'save');
     }
 
-    // Determine if we should disable platform suffix
-    const shouldDisablePlatform = inputs.enableCrossOsArchive || inputs.noPlatform || !inputs.enablePlatformSuffix;
+    const shouldDisablePlatform = inputs.enableCrossOsArchive || inputs.noPlatform;
 
     await saveCache(workspace, entriesString, {
       force: inputs.force || inputs.saveAlways,
@@ -55,17 +53,17 @@ interface SaveOptions {
 
 async function saveCache(workspace: string, entries: string, options: SaveOptions = {}): Promise<void> {
   const entryList = parseEntries(entries, 'save');
-  const validEntries: { path: string; tag: string }[] = [];
+  const validEntries: typeof entryList = [];
   const missingPaths: string[] = [];
 
   for (const entry of entryList) {
     try {
-      await fs.promises.access(entry.path);
-      core.debug(`Path exists: ${entry.path}`);
+      await fs.promises.access(entry.savePath);
+      core.debug(`Path exists: ${entry.savePath}`);
       validEntries.push(entry);
     } catch {
-      missingPaths.push(entry.path);
-      core.debug(`Path not found: ${entry.path}`);
+      missingPaths.push(entry.savePath);
+      core.debug(`Path not found: ${entry.savePath}`);
     }
   }
 
@@ -81,8 +79,8 @@ async function saveCache(workspace: string, entries: string, options: SaveOption
   core.info(`Saving ${validEntries.length} cache entries to ${workspace}`);
 
   for (const entry of validEntries) {
-    core.info(`Saving: ${entry.path} -> ${entry.tag}`);
-    const args = ['save', workspace, `${entry.path}:${entry.tag}`];
+    core.info(`Saving: ${entry.savePath} -> ${entry.tag}`);
+    const args = ['save', workspace, `${entry.tag}:${entry.savePath}`];
 
     if (options.force) {
       args.push('--force');

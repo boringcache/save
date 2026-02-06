@@ -11,12 +11,14 @@ jest.mock('@actions/core', () => ({
   addPath: jest.fn(),
 }));
 
-jest.mock('@actions/exec', () => ({
-  exec: jest.fn(),
+jest.mock('@boringcache/action-core', () => ({
+  ensureBoringCache: jest.fn().mockResolvedValue(undefined),
+  execBoringCache: jest.fn().mockResolvedValue(0),
 }));
+
 jest.mock('fs', () => ({
   promises: {
-    access: jest.fn().mockResolvedValue(undefined), // Mock path exists
+    access: jest.fn().mockResolvedValue(undefined),
     chmod: jest.fn(),
     rename: jest.fn(),
   },
@@ -27,6 +29,12 @@ const originalEnv = process.env;
 
 beforeEach(() => {
   jest.resetAllMocks();
+  // Re-setup default mocks after reset
+  const actionCore = require('@boringcache/action-core');
+  actionCore.ensureBoringCache.mockResolvedValue(undefined);
+  actionCore.execBoringCache.mockResolvedValue(0);
+  const fs = require('fs');
+  fs.promises.access.mockResolvedValue(undefined);
   process.env = { ...originalEnv };
 });
 

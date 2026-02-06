@@ -46,7 +46,6 @@ async function run() {
             path: core.getInput('path'),
             key: core.getInput('key'),
             enableCrossOsArchive: core.getBooleanInput('enableCrossOsArchive'),
-            enablePlatformSuffix: core.getBooleanInput('enable-platform-suffix'),
             noPlatform: core.getBooleanInput('no-platform'),
             force: core.getBooleanInput('force'),
             verbose: core.getBooleanInput('verbose'),
@@ -63,8 +62,7 @@ async function run() {
         else {
             entriesString = (0, utils_1.convertCacheFormatToEntries)(inputs, 'save');
         }
-        // Determine if we should disable platform suffix
-        const shouldDisablePlatform = inputs.enableCrossOsArchive || inputs.noPlatform || !inputs.enablePlatformSuffix;
+        const shouldDisablePlatform = inputs.enableCrossOsArchive || inputs.noPlatform;
         await saveCache(workspace, entriesString, {
             force: inputs.force || inputs.saveAlways,
             noPlatform: shouldDisablePlatform,
@@ -82,13 +80,13 @@ async function saveCache(workspace, entries, options = {}) {
     const missingPaths = [];
     for (const entry of entryList) {
         try {
-            await fs.promises.access(entry.path);
-            core.debug(`Path exists: ${entry.path}`);
+            await fs.promises.access(entry.savePath);
+            core.debug(`Path exists: ${entry.savePath}`);
             validEntries.push(entry);
         }
         catch {
-            missingPaths.push(entry.path);
-            core.debug(`Path not found: ${entry.path}`);
+            missingPaths.push(entry.savePath);
+            core.debug(`Path not found: ${entry.savePath}`);
         }
     }
     if (missingPaths.length > 0) {
@@ -100,8 +98,8 @@ async function saveCache(workspace, entries, options = {}) {
     }
     core.info(`Saving ${validEntries.length} cache entries to ${workspace}`);
     for (const entry of validEntries) {
-        core.info(`Saving: ${entry.path} -> ${entry.tag}`);
-        const args = ['save', workspace, `${entry.path}:${entry.tag}`];
+        core.info(`Saving: ${entry.savePath} -> ${entry.tag}`);
+        const args = ['save', workspace, `${entry.tag}:${entry.savePath}`];
         if (options.force) {
             args.push('--force');
         }
