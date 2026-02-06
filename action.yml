@@ -43,6 +43,10 @@ inputs:
     description: 'Enable detailed output (CLI --verbose flag)'
     default: 'false'
     required: false
+  save-always:
+    description: 'Save cache even if the job fails'
+    default: 'false'
+    required: false
 outputs:
   cache-saved:
     description: 'Whether the cache was saved successfully'

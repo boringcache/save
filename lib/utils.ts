@@ -7,6 +7,22 @@ import { ensureBoringCache, execBoringCache as execBoringCacheCore } from '@bori
 
 export { ensureBoringCache };
 
+export async function execBoringCache(args: string[], options: { ignoreReturnCode?: boolean } = {}): Promise<number> {
+  const code = await execBoringCacheCore(args, {
+    ignoreReturnCode: options.ignoreReturnCode ?? false,
+    silent: true,
+    listeners: {
+      stdout: (data: Buffer) => {
+        process.stdout.write(data.toString());
+      },
+      stderr: (data: Buffer) => {
+        process.stderr.write(data.toString());
+      }
+    }
+  });
+  return code;
+}
+
 export interface CacheConfig {
   workspace: string;
   fullKey: string;

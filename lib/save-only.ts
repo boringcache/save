@@ -1,7 +1,6 @@
 import * as core from '@actions/core';
-import * as exec from '@actions/exec';
 import * as fs from 'fs';
-import { ensureBoringCache, validateInputs, parseEntries, getWorkspace, convertCacheFormatToEntries } from './utils';
+import { ensureBoringCache, execBoringCache, validateInputs, parseEntries, getWorkspace, convertCacheFormatToEntries, getPlatformSuffix } from './utils';
 
 export async function run(): Promise<void> {
   try {
@@ -13,6 +12,9 @@ export async function run(): Promise<void> {
       key: core.getInput('key'),
       enableCrossOsArchive: core.getBooleanInput('enableCrossOsArchive'),
       enablePlatformSuffix: core.getBooleanInput('enable-platform-suffix'),
+      noPlatform: core.getBooleanInput('no-platform'),
+      force: core.getBooleanInput('force'),
+      verbose: core.getBooleanInput('verbose'),
       saveAlways: core.getBooleanInput('save-always'),
     };
 
@@ -20,44 +22,47 @@ export async function run(): Promise<void> {
     await ensureBoringCache({ version: cliVersion });
 
     const workspace = getWorkspace(inputs);
-    
 
     let entriesString: string;
     if (inputs.entries) {
       entriesString = inputs.entries;
     } else {
-
       entriesString = convertCacheFormatToEntries(inputs, 'save');
     }
-    
-    await saveCache(workspace, entriesString, inputs.saveAlways);
+
+    // Determine if we should disable platform suffix
+    const shouldDisablePlatform = inputs.enableCrossOsArchive || inputs.noPlatform || !inputs.enablePlatformSuffix;
+
+    await saveCache(workspace, entriesString, {
+      force: inputs.force || inputs.saveAlways,
+      noPlatform: shouldDisablePlatform,
+      verbose: inputs.verbose,
+    });
 
   } catch (error) {
     core.setFailed(`Cache save failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
-async function saveCache(workspace: string, entries: string, saveAlways: boolean = false): Promise<void> {
+interface SaveOptions {
+  force?: boolean;
+  noPlatform?: boolean;
+  verbose?: boolean;
+}
+
+async function saveCache(workspace: string, entries: string, options: SaveOptions = {}): Promise<void> {
   const entryList = parseEntries(entries, 'save');
-  const validEntries: string[] = [];
+  const validEntries: { path: string; tag: string }[] = [];
   const missingPaths: string[] = [];
-  
 
   for (const entry of entryList) {
     try {
-      await fs.promises.access(entry.path); // Use resolved path for existence check
-      core.debug(`✅ Path exists: ${entry.path}`);
-      // Find original entry format from the entries string
-      const originalEntry = entries.split(',').find(e => {
-        const [path, tag] = e.split(':');
-        return tag === entry.tag;
-      });
-      if (originalEntry) {
-        validEntries.push(originalEntry);
-      }
+      await fs.promises.access(entry.path);
+      core.debug(`Path exists: ${entry.path}`);
+      validEntries.push(entry);
     } catch {
       missingPaths.push(entry.path);
-      core.debug(`❌ Path not found: ${entry.path}`);
+      core.debug(`Path not found: ${entry.path}`);
     }
   }
 
@@ -69,21 +74,31 @@ async function saveCache(workspace: string, entries: string, saveAlways: boolean
     core.warning('No valid cache paths found, skipping save');
     return;
   }
-  const formattedEntries = validEntries.join(',');
-  core.info(`💾 Saving cache entries: ${formattedEntries}`);
 
-  const args = ['save'];
-  if (saveAlways) {
-    args.push('--force');
-  }
-  args.push(workspace, formattedEntries);
+  core.info(`Saving ${validEntries.length} cache entries to ${workspace}`);
 
-  const result = await exec.exec('boringcache', args, { ignoreReturnCode: true });
+  for (const entry of validEntries) {
+    core.info(`Saving: ${entry.path} -> ${entry.tag}`);
+    const args = ['save', workspace, `${entry.path}:${entry.tag}`];
 
-  if (result === 0) {
-    core.info(`✅ Successfully saved ${validEntries.length} cache entries`);
-  } else {
-    core.warning(`⚠️ Failed to save cache entries`);
+    if (options.force) {
+      args.push('--force');
+    }
+    if (options.noPlatform) {
+      args.push('--no-platform');
+    }
+    if (options.verbose) {
+      args.push('--verbose');
+    }
+
+    const result = await execBoringCache(args, { ignoreReturnCode: true });
+
+    if (result === 0) {
+      core.info(`Saved: ${entry.tag}`);
+      core.setOutput('cache-saved', 'true');
+    } else {
+      core.warning(`Failed to save: ${entry.tag}`);
+    }
   }
 }
 

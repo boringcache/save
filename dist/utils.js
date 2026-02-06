@@ -34,6 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ensureBoringCache = void 0;
+exports.execBoringCache = execBoringCache;
 exports.getCacheConfig = getCacheConfig;
 exports.validateInputs = validateInputs;
 exports.resolvePaths = resolvePaths;
@@ -47,6 +48,22 @@ const os = __importStar(require("os"));
 const path = __importStar(require("path"));
 const action_core_1 = require("@boringcache/action-core");
 Object.defineProperty(exports, "ensureBoringCache", { enumerable: true, get: function () { return action_core_1.ensureBoringCache; } });
+async function execBoringCache(args, options = {}) {
+    var _a;
+    const code = await (0, action_core_1.execBoringCache)(args, {
+        ignoreReturnCode: (_a = options.ignoreReturnCode) !== null && _a !== void 0 ? _a : false,
+        silent: true,
+        listeners: {
+            stdout: (data) => {
+                process.stdout.write(data.toString());
+            },
+            stderr: (data) => {
+                process.stderr.write(data.toString());
+            }
+        }
+    });
+    return code;
+}
 async function getCacheConfig(key, enableCrossOsArchive, enablePlatformSuffix = false) {
     var _a;
     const workspace = process.env.BORINGCACHE_WORKSPACE ||
