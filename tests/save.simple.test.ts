@@ -85,6 +85,96 @@ describe('Save Action', () => {
         ['save', 'my-org/my-project', 'deps:node_modules', '--force'],
       );
     });
+
+    it('should pass --force when force is true', async () => {
+      mockGetInput({
+        workspace: 'my-org/my-project',
+        entries: 'deps:node_modules',
+      });
+      mockGetBooleanInput({ force: true });
+
+      await run();
+
+      expect(execBoringCache).toHaveBeenCalledWith(
+        ['save', 'my-org/my-project', 'deps:node_modules', '--force'],
+      );
+    });
+
+    it('should pass --no-platform when no-platform is true', async () => {
+      mockGetInput({
+        workspace: 'my-org/my-project',
+        entries: 'deps:node_modules',
+      });
+      mockGetBooleanInput({ 'no-platform': true });
+
+      await run();
+
+      expect(execBoringCache).toHaveBeenCalledWith(
+        ['save', 'my-org/my-project', 'deps:node_modules', '--no-platform'],
+      );
+    });
+
+    it('should pass --no-platform when enableCrossOsArchive is true', async () => {
+      mockGetInput({
+        workspace: 'my-org/my-project',
+        entries: 'deps:node_modules',
+      });
+      mockGetBooleanInput({ enableCrossOsArchive: true });
+
+      await run();
+
+      expect(execBoringCache).toHaveBeenCalledWith(
+        ['save', 'my-org/my-project', 'deps:node_modules', '--no-platform'],
+      );
+    });
+
+    it('should pass --verbose when verbose is true', async () => {
+      mockGetInput({
+        workspace: 'my-org/my-project',
+        entries: 'deps:node_modules',
+      });
+      mockGetBooleanInput({ verbose: true });
+
+      await run();
+
+      expect(execBoringCache).toHaveBeenCalledWith(
+        ['save', 'my-org/my-project', 'deps:node_modules', '--verbose'],
+      );
+    });
+
+    it('should pass --exclude when exclude is set', async () => {
+      mockGetInput({
+        workspace: 'my-org/my-project',
+        entries: 'deps:node_modules',
+        exclude: '*.log',
+      });
+      mockGetBooleanInput({});
+
+      await run();
+
+      expect(execBoringCache).toHaveBeenCalledWith(
+        ['save', 'my-org/my-project', 'deps:node_modules', '--exclude', '*.log'],
+      );
+    });
+
+    it('should pass all flags together', async () => {
+      mockGetInput({
+        workspace: 'my-org/my-project',
+        entries: 'deps:node_modules',
+        exclude: '*.tmp',
+      });
+      mockGetBooleanInput({
+        force: true,
+        'no-platform': true,
+        verbose: true,
+      });
+
+      await run();
+
+      expect(execBoringCache).toHaveBeenCalledWith(
+        ['save', 'my-org/my-project', 'deps:node_modules', '--force', '--no-platform', '--verbose', '--exclude', '*.tmp'],
+      );
+    });
   });
 
   describe('Error Handling', () => {
