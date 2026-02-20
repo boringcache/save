@@ -23,7 +23,7 @@ describe('Save Action', () => {
 
       await run();
 
-      expect(ensureBoringCache).toHaveBeenCalledWith({ version: 'v1.2.0' });
+      expect(ensureBoringCache).toHaveBeenCalledWith({ version: 'v1.3.0' });
 
       // Now passes all entries as single string to CLI
       expect(execBoringCache).toHaveBeenCalledTimes(1);
