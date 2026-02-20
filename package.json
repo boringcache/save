@@ -1,6 +1,6 @@
 {
   "name": "boringcache-save",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "Save build artifacts to BoringCache.",
   "main": "dist/save-only/index.js",
   "scripts": {
